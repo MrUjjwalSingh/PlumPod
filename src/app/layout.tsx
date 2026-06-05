@@ -29,14 +29,13 @@ export default function RootLayout({
   return (
     <html lang="en" className={inter.variable}>
       <body className="min-h-screen" suppressHydrationWarning>
-        {/* Ambient background gradients */}
+        {/* Soft ambient warmth */}
         <div
           aria-hidden="true"
           className="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
         >
-          <div className="absolute -top-48 -left-48 h-[600px] w-[600px] rounded-full bg-violet-600/10 blur-[120px]" />
-          <div className="absolute top-1/3 right-0 h-[400px] w-[400px] rounded-full bg-cyan-600/8 blur-[100px]" />
-          <div className="absolute bottom-0 left-1/4 h-[300px] w-[300px] rounded-full bg-purple-800/8 blur-[80px]" />
+          <div className="absolute -top-32 -left-32 h-[500px] w-[500px] rounded-full bg-indigo-100/60 blur-[100px]" />
+          <div className="absolute top-1/2 right-0 h-[350px] w-[350px] rounded-full bg-teal-100/50 blur-[90px]" />
         </div>
         {children}
       </body>

@@ -15,10 +15,10 @@ export default function EmployeeDashboardPage() {
       <Navbar />
 
       {/* Page hero */}
-      <div className="border-b border-[--border] bg-[--bg-surface]/50">
+      <div className="border-b border-[--border] bg-[--bg-surface]">
         <div className="mx-auto max-w-screen-xl px-6 py-8">
           <div className="flex items-center gap-3 mb-1">
-            <span className="rounded-full bg-violet-500/15 px-3 py-1 text-xs font-semibold text-violet-400 uppercase tracking-wider">
+            <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-600 uppercase tracking-wider border border-indigo-100">
               Employee Portal
             </span>
             <span className="text-[--text-muted] text-xs">·</span>
@@ -26,7 +26,7 @@ export default function EmployeeDashboardPage() {
               Policy Year 2025–2026
             </span>
           </div>
-          <h1 className="text-2xl font-bold text-white">
+          <h1 className="text-2xl font-bold text-[--text-primary]">
             Welcome back,{" "}
             <span className="gradient-text">{employee.name.split(" ")[0]}</span>
           </h1>
@@ -53,7 +53,7 @@ export default function EmployeeDashboardPage() {
             <div className="lg:col-span-2 flex flex-col gap-4">
               {/* Adjudication Pipeline info */}
               <div className="glass-card p-5 animate-fade-in">
-                <h3 className="text-sm font-semibold text-white mb-3">
+                <h3 className="text-sm font-semibold text-[--text-primary] mb-3">
                   How It Works
                 </h3>
                 <ol className="flex flex-col gap-3">
@@ -64,11 +64,11 @@ export default function EmployeeDashboardPage() {
                     { step: "4", label: "Decision Issued", desc: "Auto-approved, partial, or routed for review" },
                   ].map(({ step, label, desc }) => (
                     <li key={step} className="flex items-start gap-3">
-                      <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-violet-500/20 text-xs font-bold text-violet-400">
+                      <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-indigo-50 border border-indigo-100 text-xs font-bold text-indigo-600">
                         {step}
                       </span>
                       <div>
-                        <p className="text-sm font-medium text-white leading-tight">{label}</p>
+                        <p className="text-sm font-medium text-[--text-primary] leading-tight">{label}</p>
                         <p className="text-xs text-[--text-muted] mt-0.5">{desc}</p>
                       </div>
                     </li>
@@ -78,7 +78,7 @@ export default function EmployeeDashboardPage() {
 
               {/* Coverage quick-ref */}
               <div className="glass-card p-5 animate-fade-in">
-                <h3 className="text-sm font-semibold text-white mb-3">Coverage Quick-Ref</h3>
+                <h3 className="text-sm font-semibold text-[--text-primary] mb-3">Coverage Quick-Ref</h3>
                 <div className="flex flex-col gap-2.5">
                   {[
                     { label: "Inpatient Hospitalization", covered: true },
@@ -90,7 +90,7 @@ export default function EmployeeDashboardPage() {
                   ].map(({ label, covered }) => (
                     <div key={label} className="flex items-center justify-between">
                       <span className="text-xs text-[--text-secondary]">{label}</span>
-                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${covered ? "bg-emerald-500/15 text-emerald-400" : "bg-red-500/15 text-red-400"}`}>
+                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold border ${covered ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-red-50 text-red-700 border-red-100"}`}>
                         {covered ? "Covered" : "Excluded"}
                       </span>
                     </div>

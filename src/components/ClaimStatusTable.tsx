@@ -3,6 +3,7 @@
 import { useState } from "react";
 import {
   ChevronRight,
+  ChevronDown,
   ArrowUpDown,
   Search,
   SlidersHorizontal,
@@ -85,7 +86,7 @@ export default function ClaimStatusTable({
       {/* Header */}
       <div className="flex flex-col gap-4 border-b border-[--border] p-6 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-white">
+          <h2 className="text-lg font-semibold text-[--text-primary]">
             {isAdmin ? "All Claims — Global View" : "Claim History"}
           </h2>
           <p className="text-sm text-[--text-secondary] mt-0.5">
@@ -106,7 +107,7 @@ export default function ClaimStatusTable({
             placeholder="Search by ID, patient, dept…"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-lg border border-[--border] bg-[--bg-surface] pl-9 pr-4 py-2 text-sm text-white placeholder:text-[--text-muted] focus:border-violet-500/50 focus:outline-none focus:ring-1 focus:ring-violet-500/30 transition-all"
+            className="w-full rounded-lg border border-[--border] bg-[--bg-surface] pl-9 pr-4 py-2 text-sm text-[--text-primary] placeholder:text-[--text-muted] focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-200 transition-all"
           />
         </div>
       </div>
@@ -126,7 +127,7 @@ export default function ClaimStatusTable({
               className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-all duration-200 border ${
                 active
                   ? `${cfg.bg} ${cfg.text} border-current/30`
-                  : "border-[--border] text-[--text-muted] hover:border-[--border-strong] hover:text-white"
+                  : "border-[--border] text-[--text-muted] hover:border-[--border-strong] hover:text-[--text-primary]"
               }`}
             >
               <span className={`h-1.5 w-1.5 rounded-full ${active ? cfg.dot : "bg-current opacity-50"}`} />
@@ -138,7 +139,7 @@ export default function ClaimStatusTable({
           <button
             id="clear-filters-btn"
             onClick={() => setActiveFilters(new Set())}
-            className="ml-auto text-xs text-[--text-muted] hover:text-white underline underline-offset-2 transition-colors"
+            className="ml-auto text-xs text-[--text-muted] hover:text-[--text-primary] underline underline-offset-2 transition-colors"
           >
             Clear all
           </button>
@@ -147,7 +148,7 @@ export default function ClaimStatusTable({
 
       {/* Table */}
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[720px] border-collapse">
+        <table className="w-full min-w-[860px] border-collapse">
           <thead>
             <tr className="border-b border-[--border]">
               {[
@@ -165,16 +166,20 @@ export default function ClaimStatusTable({
                 >
                   <button
                     id={`sort-${field}-btn`}
-                    className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-[--text-muted] hover:text-white transition-colors"
+                    className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-[--text-muted] hover:text-[--text-primary] transition-colors"
                   >
                     {label}
                     <ArrowUpDown
                       size={11}
-                      className={`transition-opacity ${sortField === field ? "opacity-100 text-violet-400" : "opacity-40"}`}
+                      className={`transition-opacity ${sortField === field ? "opacity-100 text-indigo-600" : "opacity-40"}`}
                     />
                   </button>
                 </th>
               ))}
+              {/* Non-sortable Confidence column */}
+              <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-widest text-[--text-muted]">
+                Confidence
+              </th>
               <th className="px-6 py-3 text-right text-xs font-semibold uppercase tracking-widest text-[--text-muted]">
                 Action
               </th>
@@ -184,7 +189,7 @@ export default function ClaimStatusTable({
             {filtered.length === 0 ? (
               <tr>
                 <td
-                  colSpan={isAdmin ? 7 : 6}
+                  colSpan={isAdmin ? 8 : 7}
                   className="py-16 text-center"
                 >
                   <div className="flex flex-col items-center gap-3">
@@ -223,98 +228,163 @@ function ClaimRow({
   isAdmin: boolean;
   onSelect: () => void;
 }) {
+  const [expanded, setExpanded] = useState(false);
   const cfg = STATUS_CONFIG[claim.status];
   const approved = claim.adjudicationMetrics.approvedAmount;
+  const confScore = claim.decisionOutput?.confidence_score;
+  const nextSteps = claim.decisionOutput?.next_steps;
+
+  const confStyle =
+    confScore === undefined
+      ? { text: "text-[--text-muted]", bar: "bg-[--border]" }
+      : confScore >= 0.85
+      ? { text: "text-emerald-600", bar: "bg-emerald-500" }
+      : confScore >= 0.7
+      ? { text: "text-amber-600", bar: "bg-amber-500" }
+      : { text: "text-red-600", bar: "bg-red-500" };
 
   return (
-    <tr
-      className="group transition-colors duration-150 hover:bg-[--bg-elevated]/60"
-    >
-      {/* Claim ID */}
-      <td className="px-6 py-4">
-        <span className="font-mono text-sm font-semibold text-violet-400">
-          {claim.id}
-        </span>
-        {claim.fileName && (
-          <p className="text-xs text-[--text-muted] mt-0.5 truncate max-w-[120px]">
-            {claim.fileName}
-          </p>
-        )}
-      </td>
-
-      {/* Patient */}
-      <td className="px-6 py-4">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-violet-500/15 text-xs font-bold text-violet-400">
-            {claim.patientName.split(" ").map((n) => n[0]).join("").slice(0, 2)}
-          </div>
-          <div>
-            <p className="text-sm font-medium text-white leading-tight">{claim.patientName}</p>
-            <p className="text-xs text-[--text-muted]">{claim.submittedBy}</p>
-          </div>
-        </div>
-      </td>
-
-      {/* Department (admin only) */}
-      {isAdmin && (
+    <>
+      <tr className="group transition-colors duration-150 hover:bg-[--bg-elevated]/60">
+        {/* Claim ID */}
         <td className="px-6 py-4">
-          <span className="text-sm text-[--text-secondary]">{claim.department}</span>
-        </td>
-      )}
-
-      {/* Date */}
-      <td className="px-6 py-4">
-        <span className="text-sm text-[--text-secondary]">
-          {new Date(claim.date).toLocaleDateString("en-IN", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-          })}
-        </span>
-      </td>
-
-      {/* Amount */}
-      <td className="px-6 py-4">
-        <div>
-          <p className="text-sm font-semibold text-white">{formatCurrency(claim.amountRequested)}</p>
-          {approved > 0 && approved < claim.amountRequested && (
-            <p className="text-xs text-emerald-400 mt-0.5">
-              Approved: {formatCurrency(approved)}
+          <span className="font-mono text-sm font-semibold text-indigo-600">
+            {claim.id}
+          </span>
+          {claim.fileName && (
+            <p className="text-xs text-[--text-muted] mt-0.5 truncate max-w-[120px]">
+              {claim.fileName}
             </p>
           )}
-          {approved === claim.amountRequested && approved > 0 && (
-            <p className="text-xs text-emerald-400 mt-0.5">Full payout</p>
-          )}
-          {approved === 0 && claim.status !== "PROCESSING" && (
-            <p className="text-xs text-red-400/80 mt-0.5">No payout</p>
-          )}
-        </div>
-      </td>
+        </td>
 
-      {/* Status Badge */}
-      <td className="px-6 py-4">
-        <span
-          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${cfg.bg} ${cfg.text}`}
-        >
-          <span className={`h-1.5 w-1.5 rounded-full ${cfg.dot} ${claim.status === "PROCESSING" ? "pulse-dot" : ""}`} />
-          {cfg.label}
-          {claim.ruleViolations.some((r) => r.severity === "HARD_STOP") && (
-            <span className="ml-0.5 text-[10px] opacity-70">⛔</span>
-          )}
-        </span>
-      </td>
+        {/* Patient */}
+        <td className="px-6 py-4">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-indigo-50 text-xs font-bold text-indigo-600">
+              {claim.patientName.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+            </div>
+            <div>
+              <p className="text-sm font-medium text-[--text-primary] leading-tight">{claim.patientName}</p>
+              <p className="text-xs text-[--text-muted]">{claim.submittedBy}</p>
+            </div>
+          </div>
+        </td>
 
-      {/* Action */}
-      <td className="px-6 py-4 text-right">
-        <button
-          id={`view-breakdown-${claim.id}`}
-          onClick={onSelect}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-[--border] bg-[--bg-elevated] px-3 py-1.5 text-xs font-medium text-white transition-all duration-200 hover:border-violet-500/50 hover:bg-violet-500/10 hover:text-violet-300 active:scale-95"
-        >
-          View Breakdown
-          <ChevronRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
-        </button>
-      </td>
-    </tr>
+        {/* Department (admin only) */}
+        {isAdmin && (
+          <td className="px-6 py-4">
+            <span className="text-sm text-[--text-secondary]">{claim.department}</span>
+          </td>
+        )}
+
+        {/* Date */}
+        <td className="px-6 py-4">
+          <span className="text-sm text-[--text-secondary]">
+            {new Date(claim.date).toLocaleDateString("en-IN", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+            })}
+          </span>
+        </td>
+
+        {/* Amount */}
+        <td className="px-6 py-4">
+          <div>
+            <p className="text-sm font-semibold text-[--text-primary]">{formatCurrency(claim.amountRequested)}</p>
+            {approved > 0 && approved < claim.amountRequested && (
+              <p className="text-xs text-emerald-600 mt-0.5">Approved: {formatCurrency(approved)}</p>
+            )}
+            {approved === claim.amountRequested && approved > 0 && (
+              <p className="text-xs text-emerald-600 mt-0.5">Full payout</p>
+            )}
+            {approved === 0 && claim.status !== "PROCESSING" && (
+              <p className="text-xs text-red-600/80 mt-0.5">No payout</p>
+            )}
+          </div>
+        </td>
+
+        {/* Status Badge */}
+        <td className="px-6 py-4">
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${cfg.bg} ${cfg.text}`}
+          >
+            <span className={`h-1.5 w-1.5 rounded-full ${cfg.dot} ${claim.status === "PROCESSING" ? "pulse-dot" : ""}`} />
+            {cfg.label}
+            {claim.ruleViolations.some((r) => r.severity === "HARD_STOP") && (
+              <span className="ml-0.5 text-[10px] opacity-70">⛔</span>
+            )}
+          </span>
+        </td>
+
+        {/* Confidence Score */}
+        <td className="px-6 py-4">
+          {confScore !== undefined ? (
+            <div className="flex flex-col gap-1.5 min-w-[72px]">
+              <span className={`text-xs font-bold tabular-nums ${confStyle.text}`}>
+                {(confScore * 100).toFixed(0)}%
+              </span>
+              <div className="h-1 w-full overflow-hidden rounded-full bg-[--bg-elevated]">
+                <div
+                  className={`h-full rounded-full ${confStyle.bar} progress-fill`}
+                  style={{ width: `${confScore * 100}%` }}
+                />
+              </div>
+            </div>
+          ) : (
+            <span className="text-xs text-[--text-muted]">—</span>
+          )}
+        </td>
+
+        {/* Action */}
+        <td className="px-6 py-4 text-right">
+          <div className="flex items-center justify-end gap-2">
+            {nextSteps && (
+              <button
+                id={`expand-steps-${claim.id}`}
+                onClick={() => setExpanded((v) => !v)}
+                title="Show next steps"
+                className={`flex h-7 w-7 items-center justify-center rounded-lg border transition-all duration-200 ${
+                  expanded
+                    ? "border-sky-200 bg-sky-50 text-sky-600"
+                    : "border-[--border] bg-[--bg-elevated] text-[--text-muted] hover:border-[--border-strong] hover:text-[--text-primary]"
+                }`}
+              >
+                <ChevronDown
+                  size={12}
+                  className={`transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
+                />
+              </button>
+            )}
+            <button
+              id={`view-breakdown-${claim.id}`}
+              onClick={onSelect}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-[--border] bg-[--bg-elevated] px-3 py-1.5 text-xs font-medium text-[--text-secondary] transition-all duration-200 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 active:scale-95"
+            >
+              View Breakdown
+              <ChevronRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
+            </button>
+          </div>
+        </td>
+      </tr>
+
+      {/* Expandable Next Steps row */}
+      {expanded && nextSteps && (
+        <tr className="border-b border-sky-500/10 bg-sky-500/5">
+          <td colSpan={isAdmin ? 8 : 7} className="px-6 py-3">
+            <div className="flex items-start gap-2.5">
+              <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-sky-100 text-sky-600">
+                <ChevronRight size={11} />
+              </span>
+              <div>
+                <p className="text-xs font-semibold text-sky-600 mb-0.5">Next Steps</p>
+                <p className="text-xs text-[--text-secondary] leading-relaxed">{nextSteps}</p>
+              </div>
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
   );
 }

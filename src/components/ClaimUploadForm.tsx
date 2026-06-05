@@ -1,22 +1,40 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
-import { Upload, FileText, X, CheckCircle2, Loader2, AlertCircle } from "lucide-react";
+import { Upload, FileText, CheckCircle2, AlertCircle } from "lucide-react";
 import { useClaimsStore, generateClaimId, type Claim } from "@/store/claimsStore";
 
 interface UploadState {
-  stage: "idle" | "dragging" | "uploading" | "extracting" | "adjudicating" | "done" | "error";
+  stage:
+    | "idle"
+    | "dragging"
+    | "uploading"
+    | "extracting"
+    | "checking"
+    | "coverage"
+    | "medical"
+    | "done"
+    | "error";
   file: File | null;
   progress: number;
   errorMsg: string;
 }
 
 const PROCESSING_STAGES = [
-  { stage: "uploading", label: "Uploading document…", duration: 1000 },
-  { stage: "extracting", label: "AI extracting fields (OCR)…", duration: 1800 },
-  { stage: "adjudicating", label: "Running adjudication rules…", duration: 2200 },
-  { stage: "done", label: "Claim submitted successfully", duration: 0 },
+  { stage: "uploading",  label: "Uploading & validating document…",           activeStep: 0, duration: 700  },
+  { stage: "extracting", label: "OCR Extraction — reading all fields…",        activeStep: 0, duration: 1400 },
+  { stage: "checking",   label: "Step 1–2: Eligibility & Document Check…",    activeStep: 2, duration: 900  },
+  { stage: "coverage",   label: "Step 3–4: Coverage & Limit Validation…",     activeStep: 4, duration: 900  },
+  { stage: "medical",    label: "Step 5–6: Medical Necessity & Fraud Check…", activeStep: 5, duration: 800  },
 ] as const;
+
+const PIPELINE_STEPS = [
+  { num: 1, name: "Eligibility" },
+  { num: 2, name: "Documents" },
+  { num: 3, name: "Coverage" },
+  { num: 4, name: "Limits" },
+  { num: 5, name: "Medical" },
+];
 
 export default function ClaimUploadForm() {
   const { addClaim, employee, setProcessing } = useClaimsStore();
@@ -51,21 +69,56 @@ export default function ClaimUploadForm() {
       setState({ stage: "uploading", file, progress: 0, errorMsg: "" });
       setProcessing(true);
 
-      // Simulate multi-stage processing pipeline
-      for (let i = 0; i < PROCESSING_STAGES.length; i++) {
-        const { stage, duration } = PROCESSING_STAGES[i];
-        setState((s) => ({ ...s, stage: stage as UploadState["stage"], progress: Math.round(((i + 1) / PROCESSING_STAGES.length) * 100) }));
-        if (duration > 0) await sleep(duration);
+      let progressInterval: NodeJS.Timeout;
+      try {
+        // Simulate UI progress while waiting for the backend
+        progressInterval = setInterval(() => {
+          setState((s) => {
+            const nextProgress = Math.min(s.progress + 5, 90);
+            let nextStage = s.stage;
+            if (nextProgress < 30) nextStage = "uploading";
+            else if (nextProgress < 60) nextStage = "extracting";
+            else if (nextProgress < 80) nextStage = "checking";
+            else nextStage = "medical";
+            
+            return { ...s, stage: nextStage, progress: nextProgress };
+          });
+        }, 600);
+
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("employeeId", employee.id);
+        formData.append("employeeName", employee.name);
+        formData.append("department", employee.department);
+
+        const response = await fetch("/api/adjudicate", {
+          method: "POST",
+          body: formData,
+        });
+
+        clearInterval(progressInterval);
+
+        if (!response.ok) {
+          throw new Error("Adjudication API failed");
+        }
+
+        const claimRecord = await response.json();
+        
+        addClaim(claimRecord);
+        setState((s) => ({ ...s, stage: "done", progress: 100 }));
+      } catch (err) {
+        if (progressInterval!) clearInterval(progressInterval);
+        setState((s) => ({
+          ...s,
+          stage: "error",
+          errorMsg: err instanceof Error ? err.message : "Network error processing claim.",
+        }));
+      } finally {
+        setProcessing(false);
+        setTimeout(() => {
+          setState((s) => s.stage === "done" ? { stage: "idle", file: null, progress: 0, errorMsg: "" } : s);
+        }, 3500);
       }
-
-      // Generate mock claim from the uploaded file
-      const mockClaim: Claim = buildMockClaim(file, employee.id, employee.name, employee.department);
-      addClaim(mockClaim);
-      setProcessing(false);
-
-      setTimeout(() => {
-        setState({ stage: "idle", file: null, progress: 0, errorMsg: "" });
-      }, 3500);
     },
     [addClaim, employee, setProcessing]
   );
@@ -86,20 +139,25 @@ export default function ClaimUploadForm() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const isProcessing = ["uploading", "extracting", "adjudicating"].includes(state.stage);
+  const isProcessing = ["uploading", "extracting", "checking", "coverage", "medical"].includes(
+    state.stage
+  );
   const isDone = state.stage === "done";
   const isError = state.stage === "error";
+
+  const activeStepCount =
+    PROCESSING_STAGES.find((s) => s.stage === state.stage)?.activeStep ?? 0;
 
   return (
     <div className="glass-card p-6 animate-fade-in">
       <div className="mb-5 flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-white">Submit New Claim</h2>
+          <h2 className="text-lg font-semibold text-[--text-primary]">Submit New Claim</h2>
           <p className="text-sm text-[--text-secondary] mt-0.5">
             Upload your hospital invoice or receipt for automated adjudication
           </p>
         </div>
-        <span className="rounded-lg bg-violet-500/10 border border-violet-500/20 px-3 py-1 text-xs font-medium text-violet-400">
+        <span className="rounded-lg bg-indigo-50 border border-indigo-100 px-3 py-1 text-xs font-medium text-indigo-600">
           AI-Powered
         </span>
       </div>
@@ -111,27 +169,32 @@ export default function ClaimUploadForm() {
           id="claim-dropzone"
           className={`group relative flex min-h-[180px] cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed transition-all duration-300 ${
             state.stage === "dragging"
-              ? "border-violet-400 bg-violet-500/10 scale-[1.01]"
-              : "border-[--border-strong] bg-[--bg-surface] hover:border-violet-500/50 hover:bg-violet-500/5"
+              ? "border-indigo-400 bg-indigo-50 scale-[1.01]"
+              : "border-[--border-strong] bg-[--bg-base] hover:border-indigo-300 hover:bg-indigo-50/40"
           }`}
-          onDragOver={(e) => { e.preventDefault(); setState((s) => ({ ...s, stage: "dragging" })); }}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setState((s) => ({ ...s, stage: "dragging" }));
+          }}
           onDragLeave={() => setState((s) => ({ ...s, stage: "idle" }))}
           onDrop={onDrop}
         >
-          <div className={`flex h-14 w-14 items-center justify-center rounded-2xl transition-all duration-300 ${
-            state.stage === "dragging"
-              ? "bg-violet-500/30 text-violet-300"
-              : "bg-[--bg-elevated] text-[--text-secondary] group-hover:bg-violet-500/20 group-hover:text-violet-400"
-          }`}>
+          <div
+            className={`flex h-14 w-14 items-center justify-center rounded-2xl transition-all duration-300 ${
+              state.stage === "dragging"
+                ? "bg-indigo-100 text-indigo-600"
+                : "bg-[--bg-elevated] text-[--text-secondary] group-hover:bg-indigo-50 group-hover:text-indigo-600"
+            }`}
+          >
             <Upload size={26} strokeWidth={1.75} />
           </div>
           <div className="text-center">
-            <p className="font-medium text-white">
+            <p className="font-medium text-[--text-primary]">
               {state.stage === "dragging" ? "Drop file here" : "Drop your document here"}
             </p>
             <p className="mt-1 text-sm text-[--text-secondary]">
               or{" "}
-              <span className="font-medium text-violet-400 underline underline-offset-2">
+              <span className="font-medium text-indigo-600 underline underline-offset-2">
                 browse to upload
               </span>
             </p>
@@ -150,30 +213,54 @@ export default function ClaimUploadForm() {
 
       {/* Processing State */}
       {isProcessing && (
-        <div className="flex min-h-[180px] flex-col items-center justify-center gap-5 rounded-xl border border-[--border] bg-[--bg-surface] px-6 animate-fade-in">
-          {/* Relative spinner ring */}
+        <div className="flex min-h-[210px] flex-col items-center justify-center gap-5 rounded-xl border border-[--border] bg-[--bg-base] px-6 py-6 animate-fade-in">
+          {/* Spinner */}
           <div className="relative h-16 w-16">
             <div className="absolute inset-0 rounded-full border-2 border-[--bg-elevated]" />
-            <div
-              className="absolute inset-0 rounded-full border-2 border-transparent border-t-violet-500 spin-ring"
-            />
+            <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-indigo-500 spin-ring" />
             <div className="absolute inset-2 flex items-center justify-center">
-              <FileText size={20} className="text-violet-400" />
+              <FileText size={20} className="text-indigo-600" />
             </div>
           </div>
+
           <div className="w-full max-w-xs text-center">
-            <p className="font-medium text-white">
-              {PROCESSING_STAGES.find((s) => s.stage === state.stage)?.label}
+            <p className="font-medium text-[--text-primary]">
+              {PROCESSING_STAGES.find((s) => s.stage === state.stage)?.label ?? "Processing…"}
             </p>
             {state.file && (
-              <p className="mt-0.5 text-xs text-[--text-secondary] truncate">
-                {state.file.name}
-              </p>
+              <p className="mt-0.5 text-xs text-[--text-secondary] truncate">{state.file.name}</p>
             )}
+
+            {/* 5-step pipeline indicator */}
+            <div className="mt-4 flex items-end justify-center gap-2">
+              {PIPELINE_STEPS.map((step) => {
+                const done = activeStepCount >= step.num;
+                const active = activeStepCount === step.num - 1;
+                return (
+                  <div key={step.num} className="flex flex-col items-center gap-1.5">
+                    <div
+                      className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold transition-all duration-300 ${
+                        done
+                          ? "bg-indigo-600 text-white scale-105"
+                          : active
+                          ? "bg-indigo-100 border border-indigo-300 text-indigo-600 animate-pulse"
+                          : "bg-[--bg-elevated] border border-[--border] text-[--text-muted]"
+                      }`}
+                    >
+                      {done ? <CheckCircle2 size={12} /> : step.num}
+                    </div>
+                    <span className="text-[8px] text-[--text-muted] leading-none whitespace-nowrap">
+                      {step.name}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+
             {/* Progress bar */}
             <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-[--bg-elevated]">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-violet-600 to-cyan-500 progress-fill"
+                className="h-full rounded-full bg-gradient-to-r from-indigo-600 to-teal-500 progress-fill"
                 style={{ width: `${state.progress}%` }}
               />
             </div>
@@ -187,14 +274,14 @@ export default function ClaimUploadForm() {
 
       {/* Done State */}
       {isDone && (
-        <div className="flex min-h-[180px] flex-col items-center justify-center gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/5 animate-fade-in">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400">
+        <div className="flex min-h-[180px] flex-col items-center justify-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 animate-fade-in">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
             <CheckCircle2 size={28} />
           </div>
           <div className="text-center">
-            <p className="font-semibold text-emerald-400">Claim Submitted!</p>
+            <p className="font-semibold text-emerald-700">Claim Submitted!</p>
             <p className="text-sm text-[--text-secondary] mt-1">
-              Your claim has been queued for adjudication. Check the table below for status.
+              All 5 adjudication steps complete. Check the table below for status.
             </p>
           </div>
         </div>
@@ -202,18 +289,18 @@ export default function ClaimUploadForm() {
 
       {/* Error State */}
       {isError && (
-        <div className="flex min-h-[180px] flex-col items-center justify-center gap-3 rounded-xl border border-red-500/30 bg-red-500/5 animate-fade-in">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-red-500/20 text-red-400">
+        <div className="flex min-h-[180px] flex-col items-center justify-center gap-3 rounded-xl border border-red-200 bg-red-50 animate-fade-in">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-red-100 text-red-600">
             <AlertCircle size={28} />
           </div>
           <div className="text-center">
-            <p className="font-semibold text-red-400">Upload Failed</p>
+            <p className="font-semibold text-red-700">Upload Failed</p>
             <p className="text-sm text-[--text-secondary] mt-1">{state.errorMsg}</p>
           </div>
           <button
             id="retry-upload-btn"
             onClick={() => setState({ stage: "idle", file: null, progress: 0, errorMsg: "" })}
-            className="mt-1 rounded-lg border border-red-500/30 px-4 py-1.5 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
+            className="mt-1 rounded-lg border border-red-200 px-4 py-1.5 text-sm text-red-700 hover:bg-red-100 transition-colors"
           >
             Try Again
           </button>
@@ -224,7 +311,7 @@ export default function ClaimUploadForm() {
       {state.stage === "idle" && (
         <div className="mt-4 flex items-center gap-3 text-xs text-[--text-muted]">
           <span className="flex items-center gap-1.5">
-            <span className="h-1.5 w-1.5 rounded-full bg-violet-500" />
+            <span className="h-1.5 w-1.5 rounded-full bg-indigo-500" />
             Hospital Invoices
           </span>
           <span className="flex items-center gap-1.5">
@@ -249,71 +336,4 @@ export default function ClaimUploadForm() {
 
 function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
-}
-
-function buildMockClaim(file: File, empId: string, empName: string, dept: string): Claim {
-  const amount = Math.floor(Math.random() * 45000) + 5000;
-  const confidence = Math.random() * 0.3 + 0.7;
-  const statuses = ["APPROVED", "MANUAL_REVIEW", "PARTIAL"] as const;
-  const status = statuses[Math.floor(Math.random() * statuses.length)];
-  const today = new Date().toISOString().split("T")[0];
-
-  return {
-    id: generateClaimId(),
-    employeeId: empId,
-    patientName: empName,
-    date: today,
-    amountRequested: amount,
-    status,
-    submittedBy: empName,
-    department: dept,
-    fileName: file.name,
-    extractedFields: {
-      patientName: empName,
-      patientId: empId,
-      providerName: "Uploaded Hospital",
-      diagnosisCodes: ["J06.9"],
-      procedureCodes: ["99213"],
-      serviceDate: today,
-      invoiceNumber: `INV-${Date.now()}`,
-      billTotal: amount,
-      ocrConfidence: confidence,
-      isInNetwork: confidence > 0.8,
-    },
-    adjudicationMetrics: {
-      eligibilityScore: Math.round(confidence * 100),
-      fraudScore: Math.round((1 - confidence) * 50),
-      policyMatchScore: Math.round(confidence * 90),
-      duplicateCheckPassed: true,
-      preAuthRequired: false,
-      preAuthObtained: false,
-      annualLimitBefore: 351500,
-      annualLimitAfter: 351500 - (status === "APPROVED" ? amount : 0),
-      approvedAmount: status === "APPROVED" ? amount : status === "PARTIAL" ? Math.floor(amount * 0.6) : 0,
-      deductibleApplied: 0,
-      coPayApplied: 0,
-      systemVersion: "AGY-ADJ-v3.1.4",
-      processingTimeMs: Math.floor(Math.random() * 3000) + 1000,
-    },
-    ruleViolations: confidence < 0.82
-      ? [{
-          code: "R009_LOW_CONFIDENCE_OCR",
-          description: `OCR confidence ${(confidence * 100).toFixed(0)}% below 85% threshold.`,
-          severity: "WARNING",
-          triggeredValue: confidence.toFixed(2),
-        }]
-      : [],
-    auditNotes: [
-      {
-        timestamp: new Date().toISOString(),
-        actor: "AI_ENGINE",
-        message: `Document "${file.name}" ingested. OCR confidence: ${(confidence * 100).toFixed(0)}%.`,
-      },
-      {
-        timestamp: new Date().toISOString(),
-        actor: "SYSTEM",
-        message: `Adjudication complete. Status: ${status}. Approved: ₹${status === "APPROVED" ? amount.toLocaleString("en-IN") : 0}.`,
-      },
-    ],
-  };
 }

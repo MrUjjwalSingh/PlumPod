@@ -80,14 +80,14 @@ export default function AdminDashboardPage() {
           <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <div className="flex items-center gap-2.5 mb-1">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-500/15 text-violet-400">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
                   <ShieldAlert size={16} />
                 </div>
-                <span className="text-xs font-semibold text-violet-400 uppercase tracking-wider">
+                <span className="text-xs font-semibold text-indigo-600 uppercase tracking-wider">
                   Adjuster Console
                 </span>
               </div>
-              <h1 className="text-2xl font-bold text-white">
+              <h1 className="text-2xl font-bold text-[--text-primary]">
                 Claims Review Dashboard
               </h1>
               <p className="text-sm text-[--text-secondary] mt-1">
@@ -95,10 +95,10 @@ export default function AdminDashboardPage() {
               </p>
             </div>
             {reviewQueue.length > 0 && (
-              <div className="flex items-center gap-2 rounded-xl border border-amber-500/25 bg-amber-500/10 px-4 py-3">
-                <AlertTriangle size={16} className="text-amber-400 flex-shrink-0" />
+              <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                <AlertTriangle size={16} className="text-amber-700 flex-shrink-0" />
                 <div>
-                  <p className="text-sm font-bold text-amber-400">{reviewQueue.length} items</p>
+                  <p className="text-sm font-bold text-amber-700">{reviewQueue.length} items</p>
                   <p className="text-xs text-[--text-muted]">Need manual review</p>
                 </div>
               </div>
@@ -109,10 +109,10 @@ export default function AdminDashboardPage() {
 
       {/* Success toast */}
       {overrideDone && (
-        <div className="fixed top-5 right-5 z-50 flex items-center gap-3 rounded-xl border border-emerald-500/30 bg-[--bg-elevated] px-5 py-3 shadow-xl animate-fade-in">
-          <CheckCircle2 size={18} className="text-emerald-400" />
-          <p className="text-sm text-white">
-            Claim <span className="font-mono text-emerald-400">{overrideDone}</span> override applied successfully.
+        <div className="fixed top-5 right-5 z-50 flex items-center gap-3 rounded-xl border border-emerald-200 bg-[--bg-elevated] px-5 py-3 shadow-xl animate-fade-in">
+          <CheckCircle2 size={18} className="text-emerald-700" />
+          <p className="text-sm text-[--text-primary]">
+            Claim <span className="font-mono text-emerald-700">{overrideDone}</span> override applied successfully.
           </p>
         </div>
       )}
@@ -170,10 +170,10 @@ export default function AdminDashboardPage() {
                 onClick={() => setActiveQueue(q.id)}
                 className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
                   activeQueue === q.id
-                    ? q.highlight
-                      ? "border-amber-500/40 bg-amber-500/15 text-amber-300"
-                      : "border-violet-500/40 bg-violet-500/15 text-violet-300"
-                    : "border-[--border] text-[--text-muted] hover:border-[--border-strong] hover:text-white"
+                    ? ('highlight' in q && q.highlight)
+                      ? "border-amber-500/40 bg-amber-50 text-amber-300"
+                      : "border-indigo-200 bg-indigo-50 text-indigo-700"
+                    : "border-[--border] text-[--text-muted] hover:border-[--border-strong] hover:text-[--text-primary]"
                 }`}
               >
                 {q.label}
@@ -187,8 +187,8 @@ export default function AdminDashboardPage() {
           {/* Review Queue — Override Cards */}
           {activeQueue === "review" && reviewQueue.length > 0 && (
             <div className="flex flex-col gap-3">
-              <h2 className="text-sm font-semibold text-white flex items-center gap-2">
-                <AlertTriangle size={14} className="text-amber-400" />
+              <h2 className="text-sm font-semibold text-[--text-primary] flex items-center gap-2">
+                <AlertTriangle size={14} className="text-amber-700" />
                 Items Requiring Adjuster Action
               </h2>
               {reviewQueue.map((claim) => (
@@ -248,18 +248,18 @@ function ReviewCard({
       <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2 mb-2">
-            <span className="font-mono text-sm font-bold text-violet-400">{claim.id}</span>
+            <span className="font-mono text-sm font-bold text-indigo-600">{claim.id}</span>
             <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${cfg.bg} ${cfg.text}`}>
               <span className={`h-1.5 w-1.5 rounded-full ${cfg.dot}`} />
               {cfg.label}
             </span>
             {hardStops.length > 0 && (
-              <span className="rounded-full bg-red-500/15 px-2.5 py-0.5 text-xs font-semibold text-red-400">
+              <span className="rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-semibold text-red-700">
                 ⛔ {hardStops.length} Hard Stop{hardStops.length > 1 ? "s" : ""}
               </span>
             )}
           </div>
-          <p className="font-medium text-white">{claim.patientName}</p>
+          <p className="font-medium text-[--text-primary]">{claim.patientName}</p>
           <p className="text-sm text-[--text-secondary] mt-0.5">
             {claim.department} · {claim.extractedFields.providerName}
           </p>
@@ -268,7 +268,7 @@ function ReviewCard({
           {claim.ruleViolations[0] && (
             <div className="mt-3 rounded-lg border border-[--border] bg-[--bg-base]/60 px-3 py-2">
               <p className="text-xs text-[--text-muted] mb-0.5">Top Flag</p>
-              <p className="text-xs text-white font-mono">{claim.ruleViolations[0].code}</p>
+              <p className="text-xs text-[--text-primary] font-mono">{claim.ruleViolations[0].code}</p>
               <p className="text-xs text-[--text-secondary] mt-0.5 line-clamp-1">
                 {claim.ruleViolations[0].description}
               </p>
@@ -279,7 +279,7 @@ function ReviewCard({
         <div className="flex flex-col items-end gap-3 flex-shrink-0">
           <div className="text-right">
             <p className="text-xs text-[--text-muted]">Requested</p>
-            <p className="text-lg font-bold text-white">{formatCurrency(claim.amountRequested)}</p>
+            <p className="text-lg font-bold text-[--text-primary]">{formatCurrency(claim.amountRequested)}</p>
             <p className="text-xs text-[--text-muted] mt-0.5">
               OCR: {(claim.extractedFields.ocrConfidence * 100).toFixed(0)}%
               · Fraud Risk: {claim.adjudicationMetrics.fraudScore}/100
@@ -290,14 +290,14 @@ function ReviewCard({
             <button
               id={`view-breakdown-admin-${claim.id}`}
               onClick={onViewBreakdown}
-              className="rounded-lg border border-[--border] bg-[--bg-elevated] px-3 py-1.5 text-xs font-medium text-[--text-secondary] hover:text-white hover:border-[--border-strong] transition-all"
+              className="rounded-lg border border-[--border] bg-[--bg-elevated] px-3 py-1.5 text-xs font-medium text-[--text-secondary] hover:text-[--text-primary] hover:border-[--border-strong] transition-all"
             >
               View Details
             </button>
             <button
               id={`reject-claim-${claim.id}`}
               onClick={onReject}
-              className="flex items-center gap-1.5 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-400 hover:bg-red-500/20 transition-all active:scale-95"
+              className="flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100 transition-all active:scale-95"
             >
               <XCircle size={13} />
               Reject
@@ -305,7 +305,7 @@ function ReviewCard({
             <button
               id={`approve-claim-${claim.id}`}
               onClick={onApprove}
-              className="flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-400 hover:bg-emerald-500/20 transition-all active:scale-95"
+              className="flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition-all active:scale-95"
             >
               <CheckCircle2 size={13} />
               Approve
@@ -351,12 +351,12 @@ function OverrideModal({
         className="fixed inset-0 z-50 flex items-center justify-center p-4"
       >
         <div className="animate-slide-up glass-card w-full max-w-md p-6 shadow-2xl">
-          <div className={`mb-5 flex items-center gap-3 rounded-xl border p-4 ${isApprove ? "border-emerald-500/25 bg-emerald-500/8" : "border-red-500/25 bg-red-500/8"}`}>
-            <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full ${isApprove ? "bg-emerald-500/20 text-emerald-400" : "bg-red-500/20 text-red-400"}`}>
+          <div className={`mb-5 flex items-center gap-3 rounded-xl border p-4 ${isApprove ? "border-emerald-200 bg-emerald-50" : "border-red-200 bg-red-50"}`}>
+            <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full ${isApprove ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}`}>
               {isApprove ? <CheckCircle2 size={22} /> : <XCircle size={22} />}
             </div>
             <div>
-              <p className={`font-semibold ${isApprove ? "text-emerald-400" : "text-red-400"}`}>
+              <p className={`font-semibold ${isApprove ? "text-emerald-700" : "text-red-700"}`}>
                 {isApprove ? "Approve Claim Payout" : "Reject Claim Execution"}
               </p>
               <p className="text-sm text-[--text-secondary] mt-0.5">
@@ -367,7 +367,7 @@ function OverrideModal({
 
           <p className="text-sm text-[--text-secondary] mb-4">
             You are manually overriding the AI adjudication decision for{" "}
-            <span className="font-semibold text-white">{claim.patientName}</span>. This action will be
+            <span className="font-semibold text-[--text-primary]">{claim.patientName}</span>. This action will be
             recorded in the audit ledger with your identity.
           </p>
 
@@ -384,7 +384,7 @@ function OverrideModal({
               value={note}
               onChange={(e) => onNoteChange(e.target.value)}
               placeholder="Enter the reason for this override decision…"
-              className="w-full resize-none rounded-lg border border-[--border] bg-[--bg-base] px-3 py-2 text-sm text-white placeholder:text-[--text-muted] focus:border-violet-500/50 focus:outline-none focus:ring-1 focus:ring-violet-500/30 transition-all"
+              className="w-full resize-none rounded-lg border border-[--border] bg-[--bg-base] px-3 py-2 text-sm text-[--text-primary] placeholder:text-[--text-muted] focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-200 transition-all"
             />
           </div>
 
@@ -393,7 +393,7 @@ function OverrideModal({
               id="cancel-override-btn"
               onClick={onCancel}
               disabled={loading}
-              className="flex-1 rounded-lg border border-[--border] py-2.5 text-sm font-medium text-[--text-secondary] hover:text-white hover:border-[--border-strong] transition-all disabled:opacity-50"
+              className="flex-1 rounded-lg border border-[--border] py-2.5 text-sm font-medium text-[--text-secondary] hover:text-[--text-primary] hover:border-[--border-strong] transition-all disabled:opacity-50"
             >
               Cancel
             </button>
@@ -442,10 +442,10 @@ function AdminStatCard({
   color: "violet" | "emerald" | "amber" | "sky";
 }) {
   const colorMap = {
-    violet: "text-violet-400 bg-violet-500/15",
-    emerald: "text-emerald-400 bg-emerald-500/15",
-    amber: "text-amber-400 bg-amber-500/15",
-    sky: "text-sky-400 bg-sky-500/15",
+    violet: "text-indigo-600 bg-indigo-50",
+    emerald: "text-emerald-700 bg-emerald-50",
+    amber: "text-amber-700 bg-amber-50",
+    sky: "text-sky-600 bg-sky-50",
   };
   const c = colorMap[color];
   return (
@@ -453,7 +453,7 @@ function AdminStatCard({
       <div className={`mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl ${c}`}>
         {icon}
       </div>
-      <p className="text-2xl font-bold text-white">{value}</p>
+      <p className="text-2xl font-bold text-[--text-primary]">{value}</p>
       <p className="text-xs text-[--text-muted] mt-0.5">{label}</p>
       {sub && <p className={`text-xs mt-1 ${c.split(" ")[0]}`}>{sub}</p>}
     </div>

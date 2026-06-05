@@ -20,15 +20,15 @@ export default function EmployeeHeader() {
         <div className="flex items-center gap-4">
           {/* Avatar */}
           <div className="relative flex-shrink-0">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-700 text-lg font-bold text-white shadow-lg shadow-violet-900/40">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 to-indigo-700 text-lg font-bold text-white shadow-md shadow-indigo-200">
               {employee.avatarInitials}
             </div>
-            <span className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2 border-[--bg-surface] bg-emerald-400" />
+            <span className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2 border-[--bg-surface] bg-emerald-500" />
           </div>
 
           {/* Info */}
           <div>
-            <h1 className="text-xl font-bold text-white">{employee.name}</h1>
+            <h1 className="text-xl font-bold text-[--text-primary]">{employee.name}</h1>
             <p className="text-sm text-[--text-secondary]">
               {employee.department} · {employee.employeeCode}
             </p>
@@ -37,18 +37,18 @@ export default function EmployeeHeader() {
         </div>
 
         {/* Policy Pill */}
-        <div className="rounded-xl border border-violet-500/20 bg-violet-500/10 px-4 py-3">
+        <div className="rounded-xl border border-indigo-100 bg-indigo-50 px-4 py-3">
           <div className="flex items-center gap-2 mb-1">
-            <Shield size={14} className="text-violet-400" />
-            <p className="text-xs font-semibold text-violet-400 uppercase tracking-wider">Active Policy</p>
+            <Shield size={14} className="text-indigo-600" />
+            <p className="text-xs font-semibold text-indigo-600 uppercase tracking-wider">Active Policy</p>
           </div>
-          <p className="font-mono text-sm font-bold text-white">{employee.policyNumber}</p>
+          <p className="font-mono text-sm font-bold text-[--text-primary]">{employee.policyNumber}</p>
           <p className="text-xs text-[--text-muted] mt-0.5">{employee.policyType}</p>
           <div className="mt-2 flex flex-wrap gap-1.5">
             {employee.dependents.map((dep) => (
               <span
                 key={dep}
-                className="rounded-full bg-violet-500/15 px-2 py-0.5 text-[10px] font-medium text-violet-300"
+                className="rounded-full bg-indigo-100 border border-indigo-200 px-2 py-0.5 text-[10px] font-medium text-indigo-700"
               >
                 {dep}
               </span>
@@ -63,7 +63,7 @@ export default function EmployeeHeader() {
           icon={<BadgeDollarSign size={16} />}
           label="Annual Limit"
           value={formatCurrency(employee.annualLimit)}
-          color="violet"
+          color="indigo"
         />
         <StatCard
           icon={<TrendingUp size={16} />}
@@ -96,9 +96,9 @@ export default function EmployeeHeader() {
             {formatCurrency(employee.usedLimit)} used of {formatCurrency(employee.annualLimit)}
           </span>
         </div>
-        <div className="h-2.5 w-full overflow-hidden rounded-full bg-[--bg-elevated]">
+        <div className="h-2 w-full overflow-hidden rounded-full bg-[--bg-elevated]">
           <div
-            className={`h-full rounded-full progress-fill bg-gradient-to-r ${usedPct > 75 ? "from-red-600 to-red-400" : usedPct > 50 ? "from-amber-600 to-amber-400" : "from-violet-600 to-cyan-500"}`}
+            className={`h-full rounded-full progress-fill ${usedPct > 75 ? "bg-red-500" : usedPct > 50 ? "bg-amber-500" : "bg-indigo-500"}`}
             style={{ width: `${usedPct}%` }}
           />
         </div>
@@ -119,25 +119,26 @@ function StatCard({
   label: string;
   value: string;
   sub?: string;
-  color: "violet" | "emerald" | "amber" | "red" | "sky";
+  color: "indigo" | "emerald" | "amber" | "red" | "sky";
 }) {
   const colorMap = {
-    violet: "text-violet-400 bg-violet-500/15",
-    emerald: "text-emerald-400 bg-emerald-500/15",
-    amber: "text-amber-400 bg-amber-500/15",
-    red: "text-red-400 bg-red-500/15",
-    sky: "text-sky-400 bg-sky-500/15",
+    indigo:  "text-indigo-600 bg-indigo-50 border-indigo-100",
+    emerald: "text-emerald-700 bg-emerald-50 border-emerald-100",
+    amber:   "text-amber-700 bg-amber-50 border-amber-100",
+    red:     "text-red-700 bg-red-50 border-red-100",
+    sky:     "text-sky-700 bg-sky-50 border-sky-100",
   };
   const c = colorMap[color];
+  const [textCls] = c.split(" ");
 
   return (
-    <div className="rounded-xl border border-[--border] bg-[--bg-base]/50 px-4 py-3">
-      <div className={`mb-2 inline-flex h-8 w-8 items-center justify-center rounded-lg ${c}`}>
+    <div className="rounded-xl border border-[--border] bg-[--bg-surface] px-4 py-3 shadow-sm">
+      <div className={`mb-2 inline-flex h-8 w-8 items-center justify-center rounded-lg border ${c}`}>
         {icon}
       </div>
-      <p className="text-lg font-bold text-white leading-tight">{value}</p>
+      <p className="text-lg font-bold text-[--text-primary] leading-tight">{value}</p>
       <p className="text-xs text-[--text-muted] mt-0.5">{label}</p>
-      {sub && <p className={`text-[10px] mt-1 ${c.split(" ")[0]}`}>{sub}</p>}
+      {sub && <p className={`text-[10px] mt-1 ${textCls}`}>{sub}</p>}
     </div>
   );
 }
